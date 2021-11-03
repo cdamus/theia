@@ -156,7 +156,7 @@ export class BackendApplication {
         @inject(ContributionProvider) @named(BackendApplicationContribution)
         protected readonly contributionsProvider: ContributionProvider<BackendApplicationContribution>,
         @inject(BackendApplicationCliContribution) protected readonly cliParams: BackendApplicationCliContribution,
-        @inject(Stopwatch) protected readonly stopwatch: Stopwatch // Constructor calls functions that need this
+        @inject(Stopwatch) protected readonly stopwatch: Stopwatch
     ) {
         process.on('uncaughtException', error => {
             if (error) {
@@ -330,7 +330,7 @@ export class BackendApplication {
     }
 
     protected async measure<T>(name: string, fn: () => MaybePromise<T>): Promise<T> {
-        return this.stopwatch.measurePromise(name, `Backend ${name}`, fn, { thresholdMillis: TIMER_WARNING_THRESHOLD });
+        return this.stopwatch.startAsync(name, `Backend ${name}`, fn, { thresholdMillis: TIMER_WARNING_THRESHOLD });
     }
 
 }

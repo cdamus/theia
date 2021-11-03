@@ -16,7 +16,7 @@
 
 import * as fs from '@theia/core/shared/fs-extra';
 import { injectable, inject } from '@theia/core/shared/inversify';
-import { ILogger, LogLevel } from '@theia/core';
+import { ILogger } from '@theia/core';
 import { PluginDeployerHandler, PluginDeployerEntry, PluginEntryPoint, DeployedPlugin, PluginDependencies, PluginType } from '../../common/plugin-protocol';
 import { HostedPluginReader } from './plugin-reader';
 import { Deferred } from '@theia/core/lib/common/promise-util';
@@ -124,12 +124,11 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
      */
     protected async deployPlugin(entry: PluginDeployerEntry, entryPoint: keyof PluginEntryPoint): Promise<void> {
         const pluginPath = entry.path();
-        let isDeployed = () => false;
-        const deployPlugin = this.stopwatch.measure('deployPlugin', { logLevel: () => isDeployed() ? undefined /* default */ : LogLevel.ERROR });
+        const deployPlugin = this.stopwatch.start('deployPlugin');
         try {
             const manifest = await this.reader.readPackage(pluginPath);
             if (!manifest) {
-                deployPlugin.log(`Failed to read ${entryPoint} plugin manifest from '${pluginPath}''`);
+                deployPlugin.error(`Failed to read ${entryPoint} plugin manifest from '${pluginPath}''`);
                 return;
             }
 
@@ -140,9 +139,8 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
             this.deployedLocations.set(metadata.model.id, deployedLocations);
 
             const deployedPlugins = entryPoint === 'backend' ? this.deployedBackendPlugins : this.deployedFrontendPlugins;
-            isDeployed = () => deployedPlugins.has(metadata.model.id);
-            if (isDeployed()) {
-                deployPlugin.log(`Skipped ${entryPoint} plugin ${metadata.model.name} already deployed`);
+            if (deployedPlugins.has(metadata.model.id)) {
+                deployPlugin.debug(`Skipped ${entryPoint} plugin ${metadata.model.name} already deployed`);
                 return;
             }
 
@@ -153,7 +151,7 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
             deployedPlugins.set(metadata.model.id, deployed);
             deployPlugin.log(`Deployed ${entryPoint} plugin "${metadata.model.name}@${metadata.model.version}" from "${metadata.model.entryPoint[entryPoint] || pluginPath}"`);
         } catch (e) {
-            deployPlugin.log(`Failed to deploy ${entryPoint} plugin from '${pluginPath}' path`, e);
+            deployPlugin.error(`Failed to deploy ${entryPoint} plugin from '${pluginPath}' path`, e);
         }
     }
 
@@ -165,7 +163,7 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
             return false;
         }
 
-        const undeployPlugin = this.stopwatch.measure('undeployPlugin');
+        const undeployPlugin = this.stopwatch.start('undeployPlugin');
         this.deployedLocations.delete(pluginId);
         for (const location of deployedLocations) {
             try {

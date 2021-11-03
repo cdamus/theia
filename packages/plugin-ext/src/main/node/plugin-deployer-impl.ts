@@ -304,6 +304,6 @@ export class PluginDeployerImpl implements PluginDeployer {
     }
 
     protected measure(name: string): Measurement {
-        return this.stopwatch.measure(name);
+        return this.stopwatch.start(name);
     }
 }

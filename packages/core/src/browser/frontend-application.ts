@@ -244,7 +244,7 @@ export class FrontendApplication {
     protected revealShell(host: HTMLElement): Promise<void> {
         const startupElem = this.getStartupIndicator(host);
         if (startupElem) {
-            const result = () => new Promise<void>(resolve => {
+            const doRevealShell = () => new Promise<void>(resolve => {
                 window.requestAnimationFrame(() => {
                     startupElem.classList.add('theia-hidden');
                     const preloadStyle = window.getComputedStyle(startupElem);
@@ -258,8 +258,8 @@ export class FrontendApplication {
                     }, transitionDuration);
                 });
             });
-            return this.stopwatch.measurePromise('revealShell', 'Finished loading frontend application', result,
-                { logLevel: LogLevel.INFO });
+            return this.stopwatch.startAsync('revealShell', 'Finished loading frontend application', doRevealShell,
+                { defaultLogLevel: LogLevel.INFO });
         } else {
             return Promise.resolve();
         }
@@ -391,8 +391,8 @@ export class FrontendApplication {
     }
 
     protected async measure<T>(name: string, fn: () => MaybePromise<T>): Promise<T> {
-        return this.stopwatch.measurePromise(name, `Frontend ${name}`, fn,
-            { thresholdMillis: TIMER_WARNING_THRESHOLD, logLevel: LogLevel.DEBUG });
+        return this.stopwatch.startAsync(name, `Frontend ${name}`, fn,
+            { thresholdMillis: TIMER_WARNING_THRESHOLD, defaultLogLevel: LogLevel.DEBUG });
     }
 
 }

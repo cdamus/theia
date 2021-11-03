@@ -19,22 +19,69 @@
 import { inject, injectable } from 'inversify';
 import { ILogger, LogLevel, MaybePromise } from '.';
 
+/** The default log level for measurements that are not otherwise configured with a default. */
+const DEFAULT_LOG_LEVEL = LogLevel.INFO;
+
 /**
- * A function that measures the time elapsed between its creation and its invocation.
+ * A `Measurement` counts the time elapsed between its creation when the {@link Stopwatch}
+ * is {@link Stopwatch.start started} and when it is {@link stop stopped}.
  */
 export interface Measurement {
-    /** Compute the elapsed time, in milliseconds, if not already done (only has effect on the first invocation). */
-    (): number;
+    /**
+     * Compute the elapsed time, in milliseconds, if not already done (only has effect on the first invocation).
+     * A `NaN` result indicates that the watch was stopped but failed to make a measurement.
+     */
+    stop(): number;
+
     /** The measurement name. This may show up in the performance measurement framework appropriate to the application context. */
     name: string;
-    /** The elapsed time measured, or NaN if not yet computed. */
-    elapsed: number;
+
+    /**
+     * The elapsed time measured, if it has been {@link stop stopped} and measured, or `NaN` if the platform disabled
+     * performance measurement.
+     */
+    elapsed?: number;
+
     /**
      * Compute the elapsed time and log a message annotated with that timing information.
+     * The message is logged at the level determined by the {@link MeasurementOptions}.
+     *
      * @param detail a message detailing what activity was measured
      * @param optionalArgs optional message arguments as per the usual console API
      */
     log(detail: string, ...optionalArgs: any[]): void;
+
+    /**
+     * Compute the elapsed time and log a debug message annotated with that timing information.
+     *
+     * @param detail a message detailing what activity was measured
+     * @param optionalArgs optional message arguments as per the usual console API
+     */
+    debug(detail: string, ...optionalArgs: any[]): void;
+
+    /**
+     * Compute the elapsed time and log an info message annotated with that timing information.
+     *
+     * @param detail a message detailing what activity was measured
+     * @param optionalArgs optional message arguments as per the usual console API
+     */
+    info(detail: string, ...optionalArgs: any[]): void;
+
+    /**
+     * Compute the elapsed time and log a warning message annotated with that timing information.
+     *
+     * @param detail a message detailing what activity was measured
+     * @param optionalArgs optional message arguments as per the usual console API
+     */
+    warn(detail: string, ...optionalArgs: any[]): void;
+
+    /**
+     * Compute the elapsed time and log an error message annotated with that timing information.
+     *
+     * @param detail a message detailing what activity was measured
+     * @param optionalArgs optional message arguments as per the usual console API
+     */
+    error(detail: string, ...optionalArgs: any[]): void;
 }
 
 /**
@@ -46,13 +93,16 @@ export interface MeasurementOptions {
      * Results in logs being emitted with a "[<context>]" qualified at the head.
      */
     context?: string;
-    /** An optional logging level at which to emit the log message. The default is {@link LogLevel.INFO}. */
-    logLevel?: LogLevel | ((measurement: Measurement) => LogLevel | undefined);
+
+    /** An optional logging level at which to emit the log message. The default-default is {@link LogLevel.INFO}. */
+    defaultLogLevel?: LogLevel;
+
     /**
      * Some measurements are measured against a threshold (in millis) that they should not exceed.
      * If omitted, the implied threshold is unlimited time (no threshold).
      *
-     * @see {@link Stopwatch.measurePromise}
+     * @see {@link Stopwatch.startAsync}
+     * @see {@link thresholdLogLevel}
      */
     thresholdMillis?: number;
 }
@@ -63,8 +113,13 @@ export interface MeasurementOptions {
 interface LogOptions extends MeasurementOptions {
     /** A function that computes the current time, in millis, since the start of the application. */
     now: () => number;
+
     /** An optional label for the application the start of which (in real time) is the basis of all measurements. */
     owner?: string;
+
+    /** An optional log level to override any default or dynamic log level for a specific log message. */
+    levelOverride?: LogLevel;
+
     /** Optional arguments to the log message. The 'optionalArgs' coming in from the {@link Measurement} API are slotted in here. */
     arguments?: any[];
 }
@@ -79,8 +134,8 @@ export abstract class Stopwatch {
     protected readonly logger: ILogger;
 
     protected constructor(protected readonly defaultLogOptions: LogOptions) {
-        if (!defaultLogOptions.logLevel) {
-            defaultLogOptions.logLevel = LogLevel.INFO;
+        if (!defaultLogOptions.defaultLogLevel) {
+            defaultLogOptions.defaultLogLevel = DEFAULT_LOG_LEVEL;
         }
     }
 
@@ -91,7 +146,7 @@ export abstract class Stopwatch {
      * @param options optional configuration of the new measurement
      * @returns a self-timing measurement
      */
-    public abstract measure(name: string, options?: MeasurementOptions): Measurement;
+    public abstract start(name: string, options?: MeasurementOptions): Measurement;
 
     /**
      * Wrap an asynchronous function in a {@link Measurement} that logs itself on completion.
@@ -106,13 +161,13 @@ export abstract class Stopwatch {
      *
      * @see {@link MeasurementOptions.thresholdMillis}
      */
-    public async measurePromise<T>(name: string, description: string, computation: () => MaybePromise<T>, options?: MeasurementOptions): Promise<T> {
+    public async startAsync<T>(name: string, description: string, computation: () => MaybePromise<T>, options?: MeasurementOptions): Promise<T> {
         const threshold = options?.thresholdMillis ?? Number.POSITIVE_INFINITY;
 
-        const measure = this.measure(name, { logLevel: m => m.elapsed > threshold ? LogLevel.WARN : this.logLevel(m, options) });
+        const measure = this.start(name, options);
         const result = await computation();
-        if (measure() > threshold) {
-            measure.log(`${description} is slow`);
+        if (measure.stop() > threshold) {
+            measure.warn(`${description} took longer than the expected maximum ${threshold} milliseconds`);
         } else {
             measure.log(description);
         }
@@ -122,15 +177,20 @@ export abstract class Stopwatch {
     protected createMeasurement(name: string, measurement: () => number, options?: MeasurementOptions): Measurement {
         const logOptions = this.mergeLogOptions(options);
 
-        const result: Measurement = () => {
-            if (Number.isNaN(result.elapsed)) {
-                result.elapsed = measurement();
-            }
-            return result.elapsed;
+        const result: Measurement = {
+            name,
+            stop: () => {
+                if (!result.elapsed) {
+                    result.elapsed = measurement();
+                }
+                return result.elapsed;
+            },
+            log: (activity: string, ...optionalArgs: any[]) => this.log(result, activity, this.atLevel(logOptions, undefined, optionalArgs)),
+            debug: (activity: string, ...optionalArgs: any[]) => this.log(result, activity, this.atLevel(logOptions, LogLevel.DEBUG, optionalArgs)),
+            info: (activity: string, ...optionalArgs: any[]) => this.log(result, activity, this.atLevel(logOptions, LogLevel.INFO, optionalArgs)),
+            warn: (activity: string, ...optionalArgs: any[]) => this.log(result, activity, this.atLevel(logOptions, LogLevel.WARN, optionalArgs)),
+            error: (activity: string, ...optionalArgs: any[]) => this.log(result, activity, this.atLevel(logOptions, LogLevel.ERROR, optionalArgs)),
         };
-        Object.defineProperty(result, 'name', { value: name });
-        result.log = (activity: string, ...optionalArgs: any[]) => this.log(result, activity, { ...logOptions, arguments: optionalArgs });
-        result.elapsed = Number.NaN;
 
         return result;
     }
@@ -143,18 +203,21 @@ export abstract class Stopwatch {
         return result;
     }
 
-    private logLevel(measurement: Measurement, options?: Partial<LogOptions>): LogLevel {
-        return !options
-            ? LogLevel.INFO
-            : typeof options.logLevel === 'number'
-                ? options.logLevel
-                : typeof options.logLevel === 'function' ? options.logLevel(measurement) ?? LogLevel.INFO
-                    : LogLevel.INFO;
+    private atLevel(logOptions: LogOptions, levelOverride?: LogLevel, optionalArgs?: any[]): LogOptions {
+        return { ...logOptions, levelOverride, arguments: optionalArgs };
+    }
+
+    private logLevel(elapsed: number, options?: Partial<LogOptions>): LogLevel {
+        if (options?.levelOverride) {
+            return options?.levelOverride;
+        }
+
+        return options?.defaultLogLevel || DEFAULT_LOG_LEVEL;
     }
 
     private log(measurement: Measurement, activity: string, options: LogOptions): void {
-        const elapsed = measurement();
-        const level = this.logLevel(measurement);
+        const elapsed = measurement.stop();
+        const level = this.logLevel(elapsed, options);
 
         if (Number.isNaN(elapsed)) {
             switch (level) {

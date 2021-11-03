@@ -28,7 +28,7 @@ export class BackendStopwatch extends Stopwatch {
         });
     }
 
-    measure(name: string, options?: MeasurementOptions): Measurement {
+    start(name: string, options?: MeasurementOptions): Measurement {
         const startTime = performance.now();
 
         return this.createMeasurement(name, () => {

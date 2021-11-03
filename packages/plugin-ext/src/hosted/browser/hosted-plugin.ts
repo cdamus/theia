@@ -698,7 +698,7 @@ export class HostedPluginSupport {
     }
 
     protected measure(name: string): Measurement {
-        return this.stopwatch.measure(name, { context: this.clientId });
+        return this.stopwatch.start(name, { context: this.clientId });
     }
 
     protected getPluginCount(plugins: number): string {
