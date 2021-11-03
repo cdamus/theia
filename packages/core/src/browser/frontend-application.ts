@@ -14,8 +14,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import { inject, injectable, named } from 'inversify';
-import { ContributionProvider, CommandRegistry, MenuModelRegistry, isOSX, LogLevel } from '../common';
+import { inject, injectable, named, optional } from 'inversify';
+import { ContributionProvider, CommandRegistry, MenuModelRegistry, isOSX, IStopwatchServer, LogLevel, Stopwatch } from '../common';
 import { MaybePromise } from '../common/types';
 import { KeybindingRegistry } from './keybinding';
 import { Widget } from './widgets';
@@ -26,7 +26,6 @@ import { preventNavigation, parseCssTime, animationFrame } from './browser';
 import { CorePreferences } from './core-preferences';
 import { WindowService } from './window/window-service';
 import { TooltipService } from './tooltip-service';
-import { Stopwatch } from '../common/measurement';
 
 /**
  * Clients can implement to get a callback for contributing widgets to a shell on start.
@@ -108,6 +107,10 @@ export class FrontendApplication {
     @inject(Stopwatch)
     protected readonly stopwatch: Stopwatch;
 
+    @optional()
+    @inject(IStopwatchServer)
+    protected readonly backendStopwatch?: IStopwatchServer;
+
     constructor(
         @inject(CommandRegistry) protected readonly commands: CommandRegistry,
         @inject(MenuModelRegistry) protected readonly menus: MenuModelRegistry,
@@ -133,6 +136,8 @@ export class FrontendApplication {
      * - reveal the application shell if it was hidden by a startup indicator
      */
     async start(): Promise<void> {
+        const startup = await this.backendStopwatch?.start('frontend');
+
         await this.startContributions();
         this.stateService.state = 'started_contributions';
 
@@ -149,6 +154,10 @@ export class FrontendApplication {
         await this.revealShell(host);
         this.registerEventListeners();
         this.stateService.state = 'ready';
+
+        if (this.backendStopwatch) {
+            return this.backendStopwatch.stop(startup!, 'Finished starting frontend application', []);
+        }
     }
 
     /**

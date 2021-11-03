@@ -62,7 +62,7 @@ import { JsonSchemaStore } from '@theia/core/lib/browser/json-schema-store';
 import { FileService, FileSystemProviderActivationEvent } from '@theia/filesystem/lib/browser/file-service';
 import { PluginCustomEditorRegistry } from '../../main/browser/custom-editors/plugin-custom-editor-registry';
 import { CustomEditorWidget } from '../../main/browser/custom-editors/custom-editor-widget';
-import { Measurement, Stopwatch } from '@theia/core/lib/common/measurement';
+import { Measurement, Stopwatch } from '@theia/core/lib/common';
 
 export type PluginHost = 'frontend' | string;
 export type DebugActivationEvent = 'onDebugResolve' | 'onDebugInitialConfigurations' | 'onDebugAdapterProtocolTracker' | 'onDebugDynamicConfigurations';

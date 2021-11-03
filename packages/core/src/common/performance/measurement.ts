@@ -1,5 +1,5 @@
 /********************************************************************************
-* Copyright (c) 2019, 2021 TypeFox, STMicroelectronics and others.
+* Copyright (c) 2021 STMicroelectronics and others.
 *
 * This program and the accompanying materials are made available under the
 * terms of the Eclipse Public License 2.0 which is available at
@@ -17,7 +17,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { inject, injectable } from 'inversify';
-import { ILogger, LogLevel, MaybePromise } from '.';
+import { ILogger, LogLevel, MaybePromise } from '..';
 
 /** The default log level for measurements that are not otherwise configured with a default. */
 const DEFAULT_LOG_LEVEL = LogLevel.INFO;

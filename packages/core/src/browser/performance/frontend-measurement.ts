@@ -15,26 +15,48 @@
 *******************************************************************************/
 
 import { injectable } from 'inversify';
-import { performance } from 'perf_hooks';
-import { Measurement, MeasurementOptions, Stopwatch } from '../common/measurement';
+import { Measurement, MeasurementOptions, Stopwatch } from '../../common';
 
 @injectable()
-export class BackendStopwatch extends Stopwatch {
+export class FrontendStopwatch extends Stopwatch {
 
     constructor() {
         super({
-            owner: 'backend',
+            owner: 'frontend',
             now: () => performance.now(),
         });
     }
 
     start(name: string, options?: MeasurementOptions): Measurement {
-        const startTime = performance.now();
+        const startMarker = `${name}-start`;
+        const endMarker = `${name}-end`;
+        performance.clearMeasures(name);
+        performance.clearMarks(startMarker);
+        performance.clearMarks(endMarker);
+
+        performance.mark(startMarker);
 
         return this.createMeasurement(name, () => {
-            const duration = performance.now() - startTime;
+            performance.mark(endMarker);
+
+            let duration: number;
+
+            try {
+                performance.measure(name, startMarker, endMarker);
+
+                const entries = performance.getEntriesByName(name);
+                // If no entries, then performance measurement was disabled or failed, so
+                // signal that with a `NaN` result
+                duration = entries.length > 0 ? entries[0].duration : Number.NaN;
+            } catch (e) {
+                console.warn(e);
+                duration = Number.NaN;
+            }
+
+            performance.clearMeasures(name);
+            performance.clearMarks(startMarker);
+            performance.clearMarks(endMarker);
             return duration;
         }, options);
     }
-
 };

@@ -119,8 +119,7 @@ import {
 } from './breadcrumbs';
 import { RendererHost } from './widgets';
 import { TooltipService, TooltipServiceImpl } from './tooltip-service';
-import { Stopwatch } from '../common/measurement';
-import { FrontendStopwatch } from './frontend-measurement';
+import { bindFrontendStopwatch, bindFrontendStopwatchServer } from './performance';
 
 export { bindResourceProvider, bindMessageService, bindPreferenceService };
 
@@ -392,5 +391,6 @@ export const frontendApplicationModule = new ContainerModule((bind, unbind, isBo
         return child.get(BreadcrumbPopupContainer);
     });
 
-    bind(Stopwatch).to(FrontendStopwatch).inSingletonScope();
+    bindFrontendStopwatch(bind);
+    bindFrontendStopwatchServer(bind);
 });

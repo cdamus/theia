@@ -33,7 +33,7 @@ import { PluginDeployerFileHandlerContextImpl } from './plugin-deployer-file-han
 import { PluginDeployerDirectoryHandlerContextImpl } from './plugin-deployer-directory-handler-context-impl';
 import { ILogger, Emitter, ContributionProvider } from '@theia/core';
 import { PluginCliContribution } from './plugin-cli-contribution';
-import { Measurement, Stopwatch } from '@theia/core/lib/common/measurement';
+import { Measurement, Stopwatch } from '@theia/core/lib/common';
 
 @injectable()
 export class PluginDeployerImpl implements PluginDeployer {

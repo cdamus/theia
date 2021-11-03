@@ -39,6 +39,7 @@ export * from './application-error';
 export * from './lsp-types';
 export * from './contribution-filter';
 export * from './nls';
+export * from './performance';
 
 import { environment } from '@theia/application-package/lib/environment';
 export { environment };

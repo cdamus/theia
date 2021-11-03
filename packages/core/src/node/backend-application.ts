@@ -21,14 +21,13 @@ import * as express from 'express';
 import * as yargs from 'yargs';
 import * as fs from 'fs-extra';
 import { inject, named, injectable, postConstruct } from 'inversify';
-import { ContributionProvider, MaybePromise } from '../common';
+import { ContributionProvider, MaybePromise, Stopwatch } from '../common';
 import { CliContribution } from './cli';
 import { Deferred } from '../common/promise-util';
 import { environment } from '../common/index';
 import { AddressInfo } from 'net';
 import { ApplicationPackage } from '@theia/application-package';
 import { ProcessUtils } from './process-utils';
-import { Stopwatch } from '../common/measurement';
 
 const APP_PROJECT_PATH = 'app-project-path';
 
@@ -293,7 +292,7 @@ export class BackendApplication {
                 }
             }
         }
-        return deferred.promise;
+        return this.stopwatch.startAsync('server', 'Finished starting backend application', () => deferred.promise);
     }
 
     protected onStop(): void {

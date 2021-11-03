@@ -22,7 +22,7 @@ import { HostedPluginReader } from './plugin-reader';
 import { Deferred } from '@theia/core/lib/common/promise-util';
 import { HostedPluginLocalizationService } from './hosted-plugin-localization-service';
 import { BackendApplicationConfigProvider } from '@theia/core/lib/node/backend-application-config-provider';
-import { Stopwatch } from '@theia/core/lib/common/measurement';
+import { Stopwatch } from '@theia/core/lib/common';
 
 @injectable()
 export class HostedPluginDeployerHandler implements PluginDeployerHandler {
