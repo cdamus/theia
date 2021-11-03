@@ -16,12 +16,13 @@
 
 import * as fs from '@theia/core/shared/fs-extra';
 import { injectable, inject } from '@theia/core/shared/inversify';
-import { ILogger } from '@theia/core';
+import { ILogger, LogLevel } from '@theia/core';
 import { PluginDeployerHandler, PluginDeployerEntry, PluginEntryPoint, DeployedPlugin, PluginDependencies, PluginType } from '../../common/plugin-protocol';
 import { HostedPluginReader } from './plugin-reader';
 import { Deferred } from '@theia/core/lib/common/promise-util';
 import { HostedPluginLocalizationService } from './hosted-plugin-localization-service';
 import { BackendApplicationConfigProvider } from '@theia/core/lib/node/backend-application-config-provider';
+import { Stopwatch } from '@theia/core/lib/common/measurement';
 
 @injectable()
 export class HostedPluginDeployerHandler implements PluginDeployerHandler {
@@ -34,6 +35,9 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
 
     @inject(HostedPluginLocalizationService)
     private readonly localizationService: HostedPluginLocalizationService;
+
+    @inject(Stopwatch)
+    protected readonly stopwatch: Stopwatch;
 
     private readonly deployedLocations = new Map<string, Set<string>>();
 
@@ -120,9 +124,12 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
      */
     protected async deployPlugin(entry: PluginDeployerEntry, entryPoint: keyof PluginEntryPoint): Promise<void> {
         const pluginPath = entry.path();
+        let isDeployed = () => false;
+        const deployPlugin = this.stopwatch.measure('deployPlugin', { logLevel: () => isDeployed() ? undefined /* default */ : LogLevel.ERROR });
         try {
             const manifest = await this.reader.readPackage(pluginPath);
             if (!manifest) {
+                deployPlugin.log(`Failed to read ${entryPoint} plugin manifest from '${pluginPath}''`);
                 return;
             }
 
@@ -133,7 +140,9 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
             this.deployedLocations.set(metadata.model.id, deployedLocations);
 
             const deployedPlugins = entryPoint === 'backend' ? this.deployedBackendPlugins : this.deployedFrontendPlugins;
-            if (deployedPlugins.has(metadata.model.id)) {
+            isDeployed = () => deployedPlugins.has(metadata.model.id);
+            if (isDeployed()) {
+                deployPlugin.log(`Skipped ${entryPoint} plugin ${metadata.model.name} already deployed`);
                 return;
             }
 
@@ -142,9 +151,9 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
             deployed.contributes = this.reader.readContribution(manifest);
             this.localizationService.deployLocalizations(deployed);
             deployedPlugins.set(metadata.model.id, deployed);
-            this.logger.info(`Deploying ${entryPoint} plugin "${metadata.model.name}@${metadata.model.version}" from "${metadata.model.entryPoint[entryPoint] || pluginPath}"`);
+            deployPlugin.log(`Deployed ${entryPoint} plugin "${metadata.model.name}@${metadata.model.version}" from "${metadata.model.entryPoint[entryPoint] || pluginPath}"`);
         } catch (e) {
-            console.error(`Failed to deploy ${entryPoint} plugin from '${pluginPath}' path`, e);
+            deployPlugin.log(`Failed to deploy ${entryPoint} plugin from '${pluginPath}' path`, e);
         }
     }
 
@@ -155,6 +164,8 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
         if (!deployedLocations) {
             return false;
         }
+
+        const undeployPlugin = this.stopwatch.measure('undeployPlugin');
         this.deployedLocations.delete(pluginId);
         for (const location of deployedLocations) {
             try {
@@ -163,6 +174,7 @@ export class HostedPluginDeployerHandler implements PluginDeployerHandler {
                 console.error(`[${pluginId}]: failed to undeploy from "${location}", reason`, e);
             }
         }
+        undeployPlugin.log(`[${pluginId}]: undeployed from "${location}"`);
         return true;
     }
 }

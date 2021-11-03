@@ -35,6 +35,8 @@ import { KeytarServiceImpl } from './keytar-server';
 import { ContributionFilterRegistry, ContributionFilterRegistryImpl } from '../common/contribution-filter';
 import { EnvironmentUtils } from './environment-utils';
 import { ProcessUtils } from './process-utils';
+import { Stopwatch } from '../common/measurement';
+import { BackendStopwatch } from './backend-measurement';
 
 decorate(injectable(), ApplicationPackage);
 
@@ -109,4 +111,6 @@ export const backendApplicationModule = new ContainerModule(bind => {
 
     bind(EnvironmentUtils).toSelf().inSingletonScope();
     bind(ProcessUtils).toSelf().inSingletonScope();
+
+    bind(Stopwatch).to(BackendStopwatch).inSingletonScope();
 });

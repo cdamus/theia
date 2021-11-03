@@ -15,7 +15,7 @@
  ********************************************************************************/
 
 import { inject, injectable, named } from 'inversify';
-import { ContributionProvider, CommandRegistry, MenuModelRegistry, isOSX } from '../common';
+import { ContributionProvider, CommandRegistry, MenuModelRegistry, isOSX, LogLevel } from '../common';
 import { MaybePromise } from '../common/types';
 import { KeybindingRegistry } from './keybinding';
 import { Widget } from './widgets';
@@ -26,6 +26,7 @@ import { preventNavigation, parseCssTime, animationFrame } from './browser';
 import { CorePreferences } from './core-preferences';
 import { WindowService } from './window/window-service';
 import { TooltipService } from './tooltip-service';
+import { Stopwatch } from '../common/measurement';
 
 /**
  * Clients can implement to get a callback for contributing widgets to a shell on start.
@@ -103,6 +104,9 @@ export class FrontendApplication {
 
     @inject(TooltipService)
     protected readonly tooltipService: TooltipService;
+
+    @inject(Stopwatch)
+    protected readonly stopwatch: Stopwatch;
 
     constructor(
         @inject(CommandRegistry) protected readonly commands: CommandRegistry,
@@ -240,10 +244,9 @@ export class FrontendApplication {
     protected revealShell(host: HTMLElement): Promise<void> {
         const startupElem = this.getStartupIndicator(host);
         if (startupElem) {
-            return new Promise(resolve => {
+            const result = () => new Promise<void>(resolve => {
                 window.requestAnimationFrame(() => {
                     startupElem.classList.add('theia-hidden');
-                    console.log(`Finished loading frontend application after ${(performance.now() / 1000).toFixed(3)} seconds`);
                     const preloadStyle = window.getComputedStyle(startupElem);
                     const transitionDuration = parseCssTime(preloadStyle.transitionDuration, 0);
                     window.setTimeout(() => {
@@ -255,6 +258,8 @@ export class FrontendApplication {
                     }, transitionDuration);
                 });
             });
+            return this.stopwatch.measurePromise('revealShell', 'Finished loading frontend application', result,
+                { logLevel: LogLevel.INFO });
         } else {
             return Promise.resolve();
         }
@@ -386,22 +391,8 @@ export class FrontendApplication {
     }
 
     protected async measure<T>(name: string, fn: () => MaybePromise<T>): Promise<T> {
-        const startMark = name + '-start';
-        const endMark = name + '-end';
-        performance.mark(startMark);
-        const result = await fn();
-        performance.mark(endMark);
-        performance.measure(name, startMark, endMark);
-        for (const item of performance.getEntriesByName(name)) {
-            const contribution = `Frontend ${item.name}`;
-            if (item.duration > TIMER_WARNING_THRESHOLD) {
-                console.warn(`${contribution} is slow, took: ${item.duration.toFixed(1)} ms`);
-            } else {
-                console.debug(`${contribution} took: ${item.duration.toFixed(1)} ms`);
-            }
-        }
-        performance.clearMeasures(name);
-        return result;
+        return this.stopwatch.measurePromise(name, `Frontend ${name}`, fn,
+            { thresholdMillis: TIMER_WARNING_THRESHOLD, logLevel: LogLevel.DEBUG });
     }
 
 }

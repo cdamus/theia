@@ -20,7 +20,6 @@ import * as https from 'https';
 import * as express from 'express';
 import * as yargs from 'yargs';
 import * as fs from 'fs-extra';
-import { performance, PerformanceObserver } from 'perf_hooks';
 import { inject, named, injectable, postConstruct } from 'inversify';
 import { ContributionProvider, MaybePromise } from '../common';
 import { CliContribution } from './cli';
@@ -29,6 +28,7 @@ import { environment } from '../common/index';
 import { AddressInfo } from 'net';
 import { ApplicationPackage } from '@theia/application-package';
 import { ProcessUtils } from './process-utils';
+import { Stopwatch } from '../common/measurement';
 
 const APP_PROJECT_PATH = 'app-project-path';
 
@@ -152,12 +152,11 @@ export class BackendApplication {
     @inject(ProcessUtils)
     protected readonly processUtils: ProcessUtils;
 
-    private readonly _performanceObserver: PerformanceObserver;
-
     constructor(
         @inject(ContributionProvider) @named(BackendApplicationContribution)
         protected readonly contributionsProvider: ContributionProvider<BackendApplicationContribution>,
-        @inject(BackendApplicationCliContribution) protected readonly cliParams: BackendApplicationCliContribution
+        @inject(BackendApplicationCliContribution) protected readonly cliParams: BackendApplicationCliContribution,
+        @inject(Stopwatch) protected readonly stopwatch: Stopwatch // Constructor calls functions that need this
     ) {
         process.on('uncaughtException', error => {
             if (error) {
@@ -185,21 +184,6 @@ export class BackendApplication {
         process.on('SIGINT', signalHandler);
         // Handles `kill pid`.
         process.on('SIGTERM', signalHandler);
-
-        // Create performance observer
-        this._performanceObserver = new PerformanceObserver(list => {
-            for (const item of list.getEntries()) {
-                const contribution = `Backend ${item.name}`;
-                if (item.duration > TIMER_WARNING_THRESHOLD) {
-                    console.warn(`${contribution} is slow, took: ${item.duration.toFixed(1)} ms`);
-                } else {
-                    console.debug(`${contribution} took: ${item.duration.toFixed(1)} ms`);
-                }
-            }
-        });
-        this._performanceObserver.observe({
-            entryTypes: ['measure']
-        });
 
         this.initialize();
     }
@@ -324,7 +308,6 @@ export class BackendApplication {
             }
         }
         console.info('<<< All backend contributions have been stopped.');
-        this._performanceObserver.disconnect();
         this.processUtils.terminateProcessTree(process.pid);
     }
 
@@ -347,15 +330,7 @@ export class BackendApplication {
     }
 
     protected async measure<T>(name: string, fn: () => MaybePromise<T>): Promise<T> {
-        const startMark = name + '-start';
-        const endMark = name + '-end';
-        performance.mark(startMark);
-        const result = await fn();
-        performance.mark(endMark);
-        performance.measure(name, startMark, endMark);
-        // Observer should immediately log the measurement, so we can clear it
-        performance.clearMarks(name);
-        return result;
+        return this.stopwatch.measurePromise(name, `Backend ${name}`, fn, { thresholdMillis: TIMER_WARNING_THRESHOLD });
     }
 
 }

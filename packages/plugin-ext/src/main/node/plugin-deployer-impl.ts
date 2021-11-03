@@ -33,7 +33,7 @@ import { PluginDeployerFileHandlerContextImpl } from './plugin-deployer-file-han
 import { PluginDeployerDirectoryHandlerContextImpl } from './plugin-deployer-directory-handler-context-impl';
 import { ILogger, Emitter, ContributionProvider } from '@theia/core';
 import { PluginCliContribution } from './plugin-cli-contribution';
-import { performance } from 'perf_hooks';
+import { Measurement, Stopwatch } from '@theia/core/lib/common/measurement';
 
 @injectable()
 export class PluginDeployerImpl implements PluginDeployer {
@@ -49,6 +49,9 @@ export class PluginDeployerImpl implements PluginDeployer {
 
     @inject(PluginCliContribution)
     protected readonly cliContribution: PluginCliContribution;
+
+    @inject(Stopwatch)
+    protected readonly stopwatch: Stopwatch;
 
     /**
      * Inject all plugin resolvers found at runtime.
@@ -117,13 +120,14 @@ export class PluginDeployerImpl implements PluginDeployer {
             }
         }
 
-        const startDeployTime = performance.now();
+        const deployPlugins = this.measure('deployPlugins');
         const [userPlugins, systemPlugins] = await Promise.all([
             this.resolvePlugins(context.userEntries, PluginType.User),
             this.resolvePlugins(context.systemEntries, PluginType.System)
         ]);
+        deployPlugins.log('Resolve plugins list');
         await this.deployPlugins([...userPlugins, ...systemPlugins]);
-        this.logMeasurement('Deploy plugins list', startDeployTime);
+        deployPlugins.log('Deploy plugins list');
     }
 
     async undeploy(pluginId: string): Promise<void> {
@@ -133,9 +137,9 @@ export class PluginDeployerImpl implements PluginDeployer {
     }
 
     async deploy(pluginEntry: string, type: PluginType = PluginType.System): Promise<void> {
-        const startDeployTime = performance.now();
+        const deploy = this.measure('deploy');
         await this.deployMultipleEntries([pluginEntry], type);
-        this.logMeasurement('Deploy plugin entry', startDeployTime);
+        deploy.log(`Deploy plugin ${pluginEntry}`);
     }
 
     protected async deployMultipleEntries(pluginEntries: ReadonlyArray<string>, type: PluginType = PluginType.System): Promise<void> {
@@ -299,7 +303,7 @@ export class PluginDeployerImpl implements PluginDeployer {
         return pluginDeployerEntries;
     }
 
-    protected logMeasurement(prefix: string, startTime: number): void {
-        console.log(`${prefix} took: ${(performance.now() - startTime).toFixed(1)} ms`);
+    protected measure(name: string): Measurement {
+        return this.stopwatch.measure(name);
     }
 }
