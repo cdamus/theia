@@ -15,7 +15,7 @@
 *******************************************************************************/
 
 import { interfaces } from 'inversify';
-import { IStopwatchServer, Stopwatch, stopwatchPath } from '../../common';
+import { BackendStopwatch, Stopwatch, stopwatchPath } from '../../common';
 import { WebSocketConnectionProvider } from '..';
 import { FrontendStopwatch } from './frontend-measurement';
 
@@ -23,9 +23,9 @@ export function bindFrontendStopwatch(bind: interfaces.Bind): interfaces.Binding
     return bind(Stopwatch).to(FrontendStopwatch).inSingletonScope();
 }
 
-export function bindFrontendStopwatchServer(bind: interfaces.Bind): interfaces.BindingWhenOnSyntax<unknown> {
-    return bind(IStopwatchServer).toDynamicValue(ctx => {
+export function bindBackendStopwatch(bind: interfaces.Bind): interfaces.BindingWhenOnSyntax<unknown> {
+    return bind(BackendStopwatch).toDynamicValue(ctx => {
         const connection = ctx.container.get(WebSocketConnectionProvider);
-        return connection.createProxy<IStopwatchServer>(stopwatchPath);
+        return connection.createProxy<BackendStopwatch>(stopwatchPath);
     }).inSingletonScope();
 }

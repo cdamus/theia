@@ -19,7 +19,7 @@ import { performance } from 'perf_hooks';
 import { Measurement, MeasurementOptions, Stopwatch } from '../../common';
 
 @injectable()
-export class BackendStopwatch extends Stopwatch {
+export class NodeStopwatch extends Stopwatch {
 
     constructor() {
         super({

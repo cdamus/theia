@@ -119,7 +119,7 @@ import {
 } from './breadcrumbs';
 import { RendererHost } from './widgets';
 import { TooltipService, TooltipServiceImpl } from './tooltip-service';
-import { bindFrontendStopwatch, bindFrontendStopwatchServer } from './performance';
+import { bindFrontendStopwatch, bindBackendStopwatch } from './performance';
 
 export { bindResourceProvider, bindMessageService, bindPreferenceService };
 
@@ -392,5 +392,5 @@ export const frontendApplicationModule = new ContainerModule((bind, unbind, isBo
     });
 
     bindFrontendStopwatch(bind);
-    bindFrontendStopwatchServer(bind);
+    bindBackendStopwatch(bind);
 });

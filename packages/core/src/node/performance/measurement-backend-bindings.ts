@@ -15,17 +15,17 @@
 *******************************************************************************/
 
 import { interfaces } from 'inversify';
-import { ConnectionHandler, DefaultStopwatchServer, IStopwatchServer, JsonRpcConnectionHandler, Stopwatch, stopwatchPath } from '../../common';
-import { BackendStopwatch } from './backend-measurement';
+import { ConnectionHandler, DefaultBackendStopwatch, BackendStopwatch, JsonRpcConnectionHandler, Stopwatch, stopwatchPath } from '../../common';
+import { NodeStopwatch } from './node-measurement';
 
-export function bindBackendStopwatch(bind: interfaces.Bind): interfaces.BindingWhenOnSyntax<Stopwatch> {
-    return bind(Stopwatch).to(BackendStopwatch).inSingletonScope();
+export function bindNodeStopwatch(bind: interfaces.Bind): interfaces.BindingWhenOnSyntax<Stopwatch> {
+    return bind(Stopwatch).to(NodeStopwatch).inSingletonScope();
 }
 
 export function bindBackendStopwatchServer(bind: interfaces.Bind): interfaces.BindingWhenOnSyntax<unknown> {
     bind(ConnectionHandler).toDynamicValue(({ container }) =>
-        new JsonRpcConnectionHandler<never>(stopwatchPath, () => container.get<IStopwatchServer>(IStopwatchServer))
+        new JsonRpcConnectionHandler<never>(stopwatchPath, () => container.get<BackendStopwatch>(BackendStopwatch))
     ).inSingletonScope();
 
-    return bind(IStopwatchServer).to(DefaultStopwatchServer).inSingletonScope();
+    return bind(BackendStopwatch).to(DefaultBackendStopwatch).inSingletonScope();
 }

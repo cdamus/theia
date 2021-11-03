@@ -19,19 +19,19 @@
 import { inject, injectable, LazyServiceIdentifer } from 'inversify';
 import { JsonRpcServer, Measurement, MeasurementOptions, Stopwatch } from '..';
 
-export const IStopwatchServer = Symbol('IStopwatchServer');
+export const BackendStopwatch = Symbol('BackendStopwatch');
 
 /** API path of the stopwatch service that exposes the back-end stopwatch to clients. */
 export const stopwatchPath = '/services/stopwatch';
 
-/** Token representing a remote measurement in the {@link IStopwatchServer} protocol. */
+/** Token representing a remote measurement in the {@link BackendStopwatch} protocol. */
 export type RemoteMeasurement = number;
 
 /**
- * A service that exposes the back-end's {@link Stopwatch} instance to clients
+ * A service that exposes the back-end's {@link Stopwatch} to clients
  * via the remote API.
  */
-export interface IStopwatchServer extends JsonRpcServer<unknown> {
+export interface BackendStopwatch extends JsonRpcServer<unknown> {
 
     /**
      * Create a {@link Measurement} that will compute the time that elapsed on the back-end when logged.
@@ -58,18 +58,18 @@ export interface IStopwatchServer extends JsonRpcServer<unknown> {
  * Default implementation of the (remote) back-end stopwatch service.
  */
 @injectable()
-export class DefaultStopwatchServer {
+export class DefaultBackendStopwatch {
 
     readonly measurements = new Map<number, Measurement>();
 
-    private nextToken: number = 0;
+    protected idSequence: number = 0;
 
     constructor(@inject(new LazyServiceIdentifer(() => Stopwatch)) protected readonly stopwatch: Stopwatch) {
         // Nothing else to initialize
     }
 
     start(name: string, options?: MeasurementOptions): RemoteMeasurement {
-        const result = ++this.nextToken;
+        const result = ++this.idSequence;
         this.measurements.set(result, this.stopwatch.start(name, options));
         return result;
     }

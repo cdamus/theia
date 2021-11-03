@@ -15,7 +15,7 @@
  ********************************************************************************/
 
 import { inject, injectable, named, optional } from 'inversify';
-import { ContributionProvider, CommandRegistry, MenuModelRegistry, isOSX, IStopwatchServer, LogLevel, Stopwatch } from '../common';
+import { ContributionProvider, CommandRegistry, MenuModelRegistry, isOSX, BackendStopwatch, LogLevel, Stopwatch } from '../common';
 import { MaybePromise } from '../common/types';
 import { KeybindingRegistry } from './keybinding';
 import { Widget } from './widgets';
@@ -108,8 +108,8 @@ export class FrontendApplication {
     protected readonly stopwatch: Stopwatch;
 
     @optional()
-    @inject(IStopwatchServer)
-    protected readonly backendStopwatch?: IStopwatchServer;
+    @inject(BackendStopwatch)
+    protected readonly backendStopwatch?: BackendStopwatch;
 
     constructor(
         @inject(CommandRegistry) protected readonly commands: CommandRegistry,
@@ -136,7 +136,7 @@ export class FrontendApplication {
      * - reveal the application shell if it was hidden by a startup indicator
      */
     async start(): Promise<void> {
-        const startup = await this.backendStopwatch?.start('frontend');
+        const startup = this.backendStopwatch?.start('frontend');
 
         await this.startContributions();
         this.stateService.state = 'started_contributions';
@@ -156,7 +156,7 @@ export class FrontendApplication {
         this.stateService.state = 'ready';
 
         if (this.backendStopwatch) {
-            return this.backendStopwatch.stop(startup!, 'Finished starting frontend application', []);
+            return startup?.then(idToken => this.backendStopwatch!.stop(idToken, 'Message from frontend application that it has finished loading', []));
         }
     }
 
