@@ -17,7 +17,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { inject, injectable, LazyServiceIdentifer } from 'inversify';
-import { JsonRpcServer, Measurement, MeasurementOptions, Stopwatch } from '..';
+import { Measurement, MeasurementOptions } from './measurement';
+import { Stopwatch } from './stopwatch';
+import { JsonRpcServer } from '../messaging';
 
 export const BackendStopwatch = Symbol('BackendStopwatch');
 

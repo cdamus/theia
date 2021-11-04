@@ -16,7 +16,7 @@
 
 import { interfaces } from 'inversify';
 import { BackendStopwatch, Stopwatch, stopwatchPath } from '../../common';
-import { WebSocketConnectionProvider } from '..';
+import { WebSocketConnectionProvider } from '../messaging';
 import { FrontendStopwatch } from './frontend-measurement';
 
 export function bindFrontendStopwatch(bind: interfaces.Bind): interfaces.BindingWhenOnSyntax<Stopwatch> {

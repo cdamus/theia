@@ -17,8 +17,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { inject, injectable } from 'inversify';
-import { ILogger, LogLevel, MaybePromise } from '..';
-import { Measurement, MeasurementOptions } from '.';
+import { ILogger, LogLevel } from '../logger';
+import { MaybePromise } from '../types';
+import { Measurement, MeasurementOptions } from './measurement';
 
 /** The default log level for measurements that are not otherwise configured with a default. */
 const DEFAULT_LOG_LEVEL = LogLevel.INFO;

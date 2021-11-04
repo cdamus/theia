@@ -138,7 +138,7 @@ export class FrontendApplication {
     async start(): Promise<void> {
         const startup = this.backendStopwatch?.start('frontend');
 
-        await this.startContributions();
+        await this.measure('startContributions', () => this.startContributions(), 'Start frontend contributions', false);
         this.stateService.state = 'started_contributions';
 
         const host = await this.getHost();
@@ -147,7 +147,7 @@ export class FrontendApplication {
         await animationFrame();
         this.stateService.state = 'attached_shell';
 
-        await this.initializeLayout();
+        await this.measure('initializeLayout', () => this.initializeLayout(), 'Initialize the workbench layout', false);
         this.stateService.state = 'initialized_layout';
         await this.fireOnDidInitializeLayout();
 
@@ -155,9 +155,7 @@ export class FrontendApplication {
         this.registerEventListeners();
         this.stateService.state = 'ready';
 
-        if (this.backendStopwatch) {
-            return startup?.then(idToken => this.backendStopwatch!.stop(idToken, 'Message from frontend application that it has finished loading', []));
-        }
+        startup?.then(idToken => this.backendStopwatch!.stop(idToken, 'Frontend application start', []));
     }
 
     /**
@@ -267,7 +265,7 @@ export class FrontendApplication {
                     }, transitionDuration);
                 });
             });
-            return this.stopwatch.startAsync('revealShell', 'Finished loading frontend application', doRevealShell,
+            return this.stopwatch.startAsync('revealShell', 'Replace loading indicator with ready workbench UI (animation)', doRevealShell,
                 { defaultLogLevel: LogLevel.INFO });
         } else {
             return Promise.resolve();
@@ -399,9 +397,9 @@ export class FrontendApplication {
         console.info('<<< All frontend contributions have been stopped.');
     }
 
-    protected async measure<T>(name: string, fn: () => MaybePromise<T>): Promise<T> {
-        return this.stopwatch.startAsync(name, `Frontend ${name}`, fn,
-            { thresholdMillis: TIMER_WARNING_THRESHOLD, defaultLogLevel: LogLevel.DEBUG });
+    protected async measure<T>(name: string, fn: () => MaybePromise<T>, message = `Frontend ${name}`, threshold = true): Promise<T> {
+        return this.stopwatch.startAsync(name, message, fn,
+            threshold ? { thresholdMillis: TIMER_WARNING_THRESHOLD, defaultLogLevel: LogLevel.DEBUG } : {});
     }
 
 }

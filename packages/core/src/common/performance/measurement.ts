@@ -16,7 +16,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { LogLevel } from '..';
+import { LogLevel } from '../logger';
 
 /**
  * A `Measurement` counts the time elapsed between its creation when the {@link Stopwatch}
