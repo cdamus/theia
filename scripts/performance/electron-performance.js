@@ -18,7 +18,7 @@ const fs = require('fs');
 const fsx = require('fs-extra');
 const { resolve } = require('path');
 const { spawn, ChildProcess } = require('child_process');
-const { delay, lcp, isLCP, measure } = require('./common-performance');
+const { delay, githubReporting, isLCP, lcp, measure } = require('./common-performance');
 const traceConfigTemplate = require('./electron-trace-config.json');
 const { exit } = require('process');
 
@@ -74,6 +74,9 @@ let workspace = resolve('./workspace');
     }
     if (args.runs) {
         runs = parseInt(args.runs.toString());
+    }
+    if (process.env.GITHUB_ACTIONS) {
+        githubReporting.enabled = true;
     }
 
     // Verify that the application exists
