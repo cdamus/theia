@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1636738141745,
+  "lastUpdate": 1636739260188,
   "repoUrl": "https://github.com/cdamus/theia",
   "entries": {
     "Performance Benchmarks": [
@@ -104,6 +104,42 @@ window.BENCHMARK_DATA = {
             "value": 5.1415734,
             "unit": "seconds",
             "range": 0.11766086043132598
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "give.a.damus@gmail.com",
+            "name": "Christian W. Damus",
+            "username": "cdamus"
+          },
+          "committer": {
+            "email": "give.a.damus@gmail.com",
+            "name": "Christian W. Damus",
+            "username": "cdamus"
+          },
+          "distinct": true,
+          "id": "e03bfafc5a8a1eb6689373734066ccf31d91c8ab",
+          "message": "Perf history and publication\n\n- track performance history\n- use benchmark action to check for regression\n- publish results to GH Pages\n\nContributed on behalf of STMicroelectronics.\n\nSigned-off-by: Christian W. Damus <cdamus.ext@eclipsesource.com>",
+          "timestamp": "2021-11-12T12:40:24-05:00",
+          "tree_id": "e23acafbbb3d25ef992bd963130fac2a4d4d4ff4",
+          "url": "https://github.com/cdamus/theia/commit/e03bfafc5a8a1eb6689373734066ccf31d91c8ab"
+        },
+        "date": 1636739256614,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Browser Frontend Startup",
+            "value": 3.55,
+            "unit": "seconds",
+            "range": 0.112
+          },
+          {
+            "name": "Electron Frontend Startup",
+            "value": 5,
+            "unit": "seconds",
+            "range": 0.168
           }
         ]
       }
