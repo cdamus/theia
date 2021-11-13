@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1636739260188,
+  "lastUpdate": 1636779588682,
   "repoUrl": "https://github.com/cdamus/theia",
   "entries": {
     "Performance Benchmarks": [
@@ -140,6 +140,40 @@ window.BENCHMARK_DATA = {
             "value": 5,
             "unit": "seconds",
             "range": 0.168
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Christian W. Damus",
+            "username": "cdamus",
+            "email": "give.a.damus@gmail.com"
+          },
+          "committer": {
+            "name": "Christian W. Damus",
+            "username": "cdamus",
+            "email": "give.a.damus@gmail.com"
+          },
+          "id": "4e782d38bd263f0d7b505a9f8c30b791b16793cb",
+          "message": "Integrate performance tests in the build\n\n- update performance scripts to report results for history and regression test\n- configure the build workflow for performance tests\n- track performance history\n- use benchmark action to check for regression\n- publish results to GH Pages\n\nContributed on behalf of STMicroelectronics.\n\nSigned-off-by: Christian W. Damus <cdamus.ext@eclipsesource.com>",
+          "timestamp": "2021-11-12T14:06:54Z",
+          "url": "https://github.com/cdamus/theia/commit/4e782d38bd263f0d7b505a9f8c30b791b16793cb"
+        },
+        "date": 1636779585880,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Browser Frontend Startup",
+            "value": 4.91,
+            "unit": "seconds",
+            "range": 0.759
+          },
+          {
+            "name": "Electron Frontend Startup",
+            "value": 6.43,
+            "unit": "seconds",
+            "range": 0.36
           }
         ]
       }
