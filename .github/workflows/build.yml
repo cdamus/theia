@@ -3,27 +3,21 @@ name: Build
 on:
   push:
     branches:
-      - master
+      - electron-startup
   workflow_dispatch:
-  pull_request:
-    branches:
-      - master
-  schedule:
-    - cron: '0 4 * * *' # Runs every day at 4am: https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events-schedule
 
 jobs:
-
   build:
     name: ${{ matrix.os }}, Node.js v${{ matrix.node }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, ubuntu-18.04, macos-10.15]
-        node: ['12.x', '14.x']
+        os: [ubuntu-18.04]
+        node: ['14.x']
 
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
@@ -53,23 +47,11 @@ jobs:
           NODE_OPTIONS: --max_old_space_size=4096
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # https://github.com/microsoft/vscode-ripgrep/issues/9
 
-      - name: Test (headless)
-        if: matrix.tests != 'skip'
-        shell: bash
-        run: |
-          yarn test:theia
-
-      - name: Test (browser)
-        if: matrix.tests != 'skip' && runner.os == 'Linux'
-        uses: GabrielBB/xvfb-action@v1
-        with:
-          run: yarn browser test
-
       - name: Test (electron)
         if: matrix.tests != 'skip' && runner.os == 'Linux'
         uses: GabrielBB/xvfb-action@v1
         with:
-          run: yarn electron test
+          run: yarn performance:extensions:electron
 
   publish:
     needs: build

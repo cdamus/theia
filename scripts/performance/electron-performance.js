@@ -131,6 +131,8 @@ async function measurePerformance() {
         const traceFile = traceConfigGenerator(runNr);
         electron = await launchElectron(traceConfigPath);
 
+        electron.stderr.on('data', (chunk) => console.log('>>>', chunk.toString()));
+
         // Uncomment this to see why the child process terminates early when driven by extension-impact.js
         // electron.stderr.on('data', data => console.error(data.toString()));
 
