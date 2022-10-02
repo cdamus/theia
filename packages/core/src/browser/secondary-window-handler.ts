@@ -14,13 +14,13 @@
 // SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
 // *****************************************************************************
 
-import debounce = require('lodash.debounce');
 import { inject, injectable } from 'inversify';
 import { BoxLayout, BoxPanel, ExtractableWidget, Widget } from './widgets';
 import { MessageService } from '../common/message-service';
 import { ApplicationShell } from './shell/application-shell';
 import { Emitter } from '../common/event';
 import { SecondaryWindowService } from './window/secondary-window-service';
+import debounce = require('lodash.debounce');
 
 /** Widget to be contained directly in a secondary window. */
 class SecondaryWindowRootWidget extends Widget {
@@ -131,13 +131,17 @@ export class SecondaryWindowHandler {
             return;
         }
 
-        const newWindow = this.secondaryWindowService.createSecondaryWindow(closed => {
-            this.applicationShell.closeWidget(widget.id);
-            const extIndex = this.secondaryWindows.indexOf(closed);
-            if (extIndex > -1) {
-                this.secondaryWindows.splice(extIndex, 1);
-            }
-        });
+        const newWindow = this.secondaryWindowService.createSecondaryWindow(
+            async () => {
+                await this.applicationShell.closeWidget(widget.id);
+                return widget.isDisposed;
+            },
+            closedWindow => {
+                const extIndex = this.secondaryWindows.indexOf(closedWindow);
+                if (extIndex > -1) {
+                    this.secondaryWindows.splice(extIndex, 1);
+                }
+            });
 
         if (!newWindow) {
             this.messageService.error('The widget could not be moved to a secondary window because the window creation failed. Please make sure to allow popups.');
@@ -161,6 +165,7 @@ export class SecondaryWindowHandler {
 
             widget.secondaryWindow = newWindow;
             const rootWidget = new SecondaryWindowRootWidget();
+            rootWidget.id = 'root-' + widget.id;
             Widget.attach(rootWidget, element);
             rootWidget.addWidget(widget);
             widget.update();
@@ -169,10 +174,8 @@ export class SecondaryWindowHandler {
 
             // Close the window if the widget is disposed, e.g. by a command closing all widgets.
             widget.disposed.connect(() => {
+                this.applicationShell.closeWidget(rootWidget.id);
                 this.removeWidget(widget);
-                if (!newWindow.closed) {
-                    newWindow.close();
-                }
             });
 
             // debounce to avoid rapid updates while resizing the secondary window

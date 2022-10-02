@@ -46,16 +46,17 @@ export class DefaultSecondaryWindowService implements SecondaryWindowService {
         });
     }
 
-    createSecondaryWindow(onClose?: (closedWin: Window) => void): Window | undefined {
-        const win = this.doCreateSecondaryWindow(onClose);
+    createSecondaryWindow(onClosing: (win: Window) => Promise<boolean>, onClosed?: (closedWin: Window) => void): Window | undefined {
+        const id = this.nextWindowId();
+        const win = this.doCreateSecondaryWindow(id, onClosing, onClosed);
         if (win) {
             this.secondaryWindows.push(win);
         }
         return win;
     }
 
-    protected doCreateSecondaryWindow(onClose?: (closedWin: Window) => void): Window | undefined {
-        const win = window.open(DefaultSecondaryWindowService.SECONDARY_WINDOW_URL, this.nextWindowId(), 'popup');
+    protected doCreateSecondaryWindow(id: string, onClosing: (win: Window) => Promise<boolean>, onClose?: (closedWin: Window) => void): Window | undefined {
+        const win = window.open(DefaultSecondaryWindowService.SECONDARY_WINDOW_URL, id, 'popup');
         if (win) {
             // Add the unload listener after the dom content was loaded because otherwise the unload listener is called already on open in some browsers (e.g. Chrome).
             win.addEventListener('DOMContentLoaded', () => {

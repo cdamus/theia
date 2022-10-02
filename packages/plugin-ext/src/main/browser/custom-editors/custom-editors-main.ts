@@ -520,7 +520,6 @@ export class CustomTextEditorModel implements CustomEditorModel {
     private readonly toDispose = new DisposableCollection();
     private readonly onDirtyChangedEmitter = new Emitter<void>();
     readonly onDirtyChanged = this.onDirtyChangedEmitter.event;
-    readonly autoSave: 'off' | 'afterDelay' | 'onFocusChange' | 'onWindowChange';
 
     static async create(
         viewType: string,
@@ -566,6 +565,14 @@ export class CustomTextEditorModel implements CustomEditorModel {
 
     get editorTextModel(): MonacoEditorModel {
         return this.model.object;
+    }
+
+    get autoSave(): 'off' | 'afterDelay' | 'onFocusChange' | 'onWindowChange' {
+        return this.editorTextModel.autoSave;
+    }
+
+    get autoSaveDelay(): number {
+        return this.editorTextModel.autoSaveDelay;
     }
 
     revert(options?: Saveable.RevertOptions): Promise<void> {
