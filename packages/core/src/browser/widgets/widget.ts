@@ -336,18 +336,19 @@ export function waitForHidden(widget: Widget): Promise<void> {
 }
 
 function waitForVisible(widget: Widget, visible: boolean, attached?: boolean): Promise<void> {
+    const win = widget.node.ownerDocument.defaultView || window;
     if ((typeof attached !== 'boolean' || widget.isAttached === attached) &&
         (widget.isVisible === visible || (widget.node.style.visibility !== 'hidden') === visible)
     ) {
         console.log('immediate visibility');
-        return new Promise(resolve => window.requestAnimationFrame(() => resolve()));
+        return new Promise(resolve => win.requestAnimationFrame(() => resolve()));
     }
     return new Promise(resolve => {
-        const waitFor = () => window.requestAnimationFrame(() => {
+        const waitFor = () => win.requestAnimationFrame(() => {
             console.log('delayed visibility');
             if ((typeof attached !== 'boolean' || widget.isAttached === attached) &&
                 (widget.isVisible === visible || (widget.node.style.visibility !== 'hidden') === visible)) {
-                window.requestAnimationFrame(() => resolve());
+                win.requestAnimationFrame(() => resolve());
             } else {
                 waitFor();
             }
